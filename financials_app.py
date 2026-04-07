@@ -3,6 +3,13 @@ import pandas as pd
 import plotly.graph_objects as go
 from streamlit_gsheets import GSheetsConnection
 
+
+# ... rest of your dashboard code ...
+
+
+
+
+
 # --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="Financial Executive View", layout="wide", initial_sidebar_state="expanded")
 
