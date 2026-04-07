@@ -4,3 +4,8 @@ plotly
 st-gsheets-connection
 msoffcrypto-python
 openpyxl
+
+streamlit
+pandas
+plotly
+st-gsheets-connection
