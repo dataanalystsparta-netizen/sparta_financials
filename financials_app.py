@@ -73,6 +73,33 @@ with left_col:
     fig.update_layout(barmode='group', height=400, margin=dict(t=0, b=0, l=0, r=0))
     st.plotly_chart(fig, use_container_width=True)
 
+
+with right_col:
+    st.subheader("Collection Efficiency %")
+    
+    # Calculations
+    cash_efficiency = (m_data['Cash Collected'] / m_data['Cash Due'] * 100) if m_data['Cash Due'] > 0 else 0
+    dd_efficiency = (m_data['DD Collected'] / m_data['DD Due'] * 100) if m_data['DD Due'] > 0 else 0
+    
+    # Display Cash Progress (Capped at 1.0 for the UI bar)
+    st.write(f"**Cash Collection Ratio:** {cash_efficiency:.1f}%")
+    st.progress(min(cash_efficiency / 100, 1.0)) # <--- min() added here
+    
+    # Display DD Progress (Capped at 1.0 for the UI bar)
+    st.write(f"**Direct Debit Ratio:** {dd_efficiency:.1f}%")
+    st.progress(min(dd_efficiency / 100, 1.0))   # <--- min() added here
+    
+    # Summary Card
+    total_col = m_data['Cash Collected'] + m_data['DD Collected']
+    total_due = m_data['Cash Due'] + m_data['DD Due']
+    overall_eff = (total_col / total_due * 100) if total_due > 0 else 0
+    
+    if overall_eff > 100:
+        st.success(f"⭐ **Exceptional Performance! Overall Efficiency: {overall_eff:.1f}%**")
+    else:
+        st.info(f"💡 **Overall Collection Efficiency for {selected_month} is {overall_eff:.1f}%**")
+
+'''
 with right_col:
     st.subheader("Collection Efficiency %")
     
@@ -92,7 +119,7 @@ with right_col:
     overall_eff = (total_col / total_due * 100) if total_due > 0 else 0
     
     st.info(f"💡 **Overall Collection Efficiency for {selected_month} is {overall_eff:.1f}%**")
-
+'''
 # --- 7. HISTORICAL TREND ---
 st.divider()
 st.subheader("Historical Comparison")
