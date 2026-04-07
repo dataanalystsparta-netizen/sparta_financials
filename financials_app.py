@@ -99,27 +99,7 @@ with right_col:
     else:
         st.info(f"💡 **Overall Collection Efficiency for {selected_month} is {overall_eff:.1f}%**")
 
-'''
-with right_col:
-    st.subheader("Collection Efficiency %")
-    
-    # Calculations
-    cash_efficiency = (m_data['Cash Collected'] / m_data['Cash Due'] * 100) if m_data['Cash Due'] > 0 else 0
-    dd_efficiency = (m_data['DD Collected'] / m_data['DD Due'] * 100) if m_data['DD Due'] > 0 else 0
-    
-    st.write(f"**Cash Collection Ratio:** {cash_efficiency:.1f}%")
-    st.progress(cash_efficiency / 100)
-    
-    st.write(f"**Direct Debit Ratio:** {dd_efficiency:.1f}%")
-    st.progress(dd_efficiency / 100)
-    
-    # Summary Card
-    total_col = m_data['Cash Collected'] + m_data['DD Collected']
-    total_due = m_data['Cash Due'] + m_data['DD Due']
-    overall_eff = (total_col / total_due * 100) if total_due > 0 else 0
-    
-    st.info(f"💡 **Overall Collection Efficiency for {selected_month} is {overall_eff:.1f}%**")
-'''
+
 # --- 7. HISTORICAL TREND ---
 st.divider()
 st.subheader("Historical Comparison")
