@@ -135,7 +135,7 @@ with right_col:
     total_expected = cash_total + dd_total
     overall_eff = (total_banked / total_expected * 100) if total_expected > 0 else 0
     
-    st.info(f"💡 **Total Portfolio Efficiency for {selected_month} is {overall_eff:.1f}%**")
+    st.info(f"💡 **Total Collection Efficiency for {selected_month} is {overall_eff:.1f}%**")
 
 # --- 8. AUDIT DATA (OPTIONAL) ---
 with st.expander("View Monthly Data Table"):
