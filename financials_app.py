@@ -16,20 +16,26 @@ if theme_mode == "Dark":
     text_color = "#ffffff"
     metric_color = "#4db8ff"
     chart_template = "plotly_dark"
+    plot_bg = "rgba(0,0,0,0)"
 else:
-    main_bg = "#f4f7f9"
-    card_bg = "#ffffff"
+    main_bg = "#ffffff"
+    card_bg = "#f4f7f9"
     text_color = "#2c3e50"
     metric_color = "#2c3e50"
     chart_template = "plotly_white"
+    plot_bg = "rgba(0,0,0,0)"
 
-# Custom CSS for theme switching
+# Custom CSS with !important flags to override Streamlit defaults
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: {main_bg}; color: {text_color}; }}
-    div[data-testid="stMetricValue"] {{ font-size: 28px; font-weight: 800; color: {metric_color}; }}
-    .stProgress > div > div > div > div {{ background-color: #2ecc71; }}
-    [data-testid="stExpander"] {{ background-color: {card_bg}; border-radius: 10px; }}
+    .stApp {{ background-color: {main_bg} !important; }}
+    h1, h2, h3, p, span, label, .stMarkdown {{ color: {text_color} !important; }}
+    div[data-testid="stMetricValue"] {{ font-size: 28px; font-weight: 800; color: {metric_color} !important; }}
+    .stProgress > div > div > div > div {{ background-color: #2ecc71 !important; }}
+    [data-testid="stExpander"] {{ background-color: {card_bg} !important; border: 1px solid #ddd; border-radius: 10px; }}
+    /* Force sidebar text consistency */
+    section[data-testid="stSidebar"] {{ background-color: {card_bg}; }}
+    section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] p {{ color: {text_color} !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -102,6 +108,9 @@ with left_col:
         barmode='stack', 
         height=450, 
         template=chart_template,
+        paper_bgcolor=plot_bg,
+        plot_bgcolor=plot_bg,
+        font=dict(color=text_color),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=0, b=0, l=0, r=0)
     )
