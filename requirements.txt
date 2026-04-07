@@ -1,4 +1,6 @@
 streamlit
 pandas
 plotly
-streamlit-gsheets
+st-gsheets-connection
+msoffcrypto-python
+openpyxl
