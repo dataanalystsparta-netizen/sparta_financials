@@ -6,21 +6,11 @@ from streamlit_gsheets import GSheetsConnection
 # --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="Financial Executive View", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS for high-contrast visibility
-st.markdown("""
-    <style>
-    .main { background-color: #f4f7f9; }
-    div[data-testid="stMetricValue"] { font-size: 28px; font-weight: 800; color: #2c3e50; }
-    .stProgress > div > div > div > div { background-color: #2ecc71; }
-    </style>
-    """, unsafe_allow_html=True)
-
 # --- 2. DATA CONNECTION ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Bm5WIq19vWpNmVHir40eU3zl5Yx36EDdGCS0xEdCA5Y"
 
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    # ttl=0 ensures we don't cache bad data
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
 except Exception as e:
     st.error(f"Connection Error: {e}")
@@ -28,93 +18,87 @@ except Exception as e:
 
 # --- 3. THE "STRICT" CLEANER ---
 def force_clean_numeric(val):
-    """Deep cleans strings, currency symbols, and commas."""
     if pd.isna(val) or val == "":
         return 0.0
     try:
-        # Convert to string and strip everything except numbers and dots
         clean_str = "".join(c for c in str(val) if c.isdigit() or c == '.')
-        # If the result is just a dot or empty, return 0
         if clean_str == "." or not clean_str:
             return 0.0
         return float(clean_str)
     except:
         return 0.0
 
-# Apply strict cleaning to the key financial columns
 cols_to_fix = ['Cash Collected', 'DD Collected', 'Cash Due', 'DD Due']
 for col in cols_to_fix:
     if col in df.columns:
         df[col] = df[col].apply(force_clean_numeric)
 
-# --- 4. SIDEBAR & DATA SELECTION ---
-st.sidebar.header("Navigation")
+# --- 4. DATA SELECTION ---
 if not df.empty:
     month_list = df['Month'].unique().tolist()
     selected_month = st.sidebar.selectbox("Select Billing Month", month_list)
     m_data = df[df['Month'] == selected_month].iloc[0]
 else:
-    st.error("Sheet is empty. Check your Sync Script.")
     st.stop()
 
 # --- 5. HEADER ---
 st.title(f"📊 Financial Performance: {selected_month}")
-st.markdown(f"**Source:** Master File Billing | **Status:** Live Sync")
 st.divider()
 
 # --- 6. KPI METRICS ---
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Cash Collected", f"£{m_data['Cash Collected']:,.2f}")
 c2.metric("DD Collected", f"£{m_data['DD Collected']:,.2f}")
-c3.metric("Cash Due", f"£{m_data['Cash Due']:,.2f}")
-c4.metric("DD Due", f"£{m_data['DD Due']:,.2f}")
+c3.metric("Cash Due (O/S)", f"£{m_data['Cash Due']:,.2f}")
+c4.metric("DD Due (O/S)", f"£{m_data['DD Due']:,.2f}")
 
 st.divider()
 
-# --- 7. ANALYTICS ---
+# --- 7. ANALYTICS (UPDATED FORMULA) ---
 left_col, right_col = st.columns([1, 1])
 
+# Extract values for readability
+c_coll = m_data['Cash Collected']
+c_due = m_data['Cash Due']
+d_coll = m_data['DD Collected']
+d_due = m_data['DD Due']
+
 with left_col:
-    st.subheader("Collection vs. Target")
+    st.subheader("Collection vs. Outstanding")
     fig = go.Figure(data=[
-        go.Bar(name='Collected', x=['Cash', 'Direct Debit'], 
-               y=[m_data['Cash Collected'], m_data['DD Collected']], marker_color='#2ecc71'),
-        go.Bar(name='Outstanding Due', x=['Cash', 'Direct Debit'], 
-               y=[m_data['Cash Due'], m_data['DD Due']], marker_color='#e74c3c')
+        go.Bar(name='Collected', x=['Cash', 'Direct Debit'], y=[c_coll, d_coll], marker_color='#2ecc71'),
+        go.Bar(name='Still Due', x=['Cash', 'Direct Debit'], y=[c_due, d_due], marker_color='#e74c3c')
     ])
-    fig.update_layout(barmode='group', height=400, margin=dict(t=20, b=20, l=0, r=0))
+    fig.update_layout(barmode='stack', height=400) # Changed to 'stack' for a better visual of the "Total"
     st.plotly_chart(fig, use_container_width=True)
 
 with right_col:
     st.subheader("Collection Efficiency %")
     
-    # Calculation Logic
-    # We use (Collected / Due) * 100. 
-    # If the number is still huge, check if 'Due' is 1.0 (representing 100%) in the sheet.
-    cash_eff = (m_data['Cash Collected'] / m_data['Cash Due'] * 100) if m_data['Cash Due'] > 0 else 0
-    dd_eff = (m_data['DD Collected'] / m_data['DD Due'] * 100) if m_data['DD Due'] > 0 else 0
+    # NEW FORMULAS PER YOUR REQUIREMENT:
+    # Efficiency = Collected / (Collected + Due) * 100
     
-    st.write(f"**Cash Collection:** {cash_eff:.1f}%")
-    st.progress(min(cash_eff / 100, 1.0))
+    cash_total_potential = c_coll + c_due
+    dd_total_potential = d_coll + d_due
     
-    st.write(f"**Direct Debit:** {dd_eff:.1f}%")
-    st.progress(min(dd_eff / 100, 1.0))
+    cash_eff = (c_coll / cash_total_potential * 100) if cash_total_potential > 0 else 0
+    dd_eff = (d_coll / dd_total_potential * 100) if dd_total_potential > 0 else 0
     
-    # Overall
-    total_col = m_data['Cash Collected'] + m_data['DD Collected']
-    total_due = m_data['Cash Due'] + m_data['DD Due']
-    overall_eff = (total_col / total_due * 100) if total_due > 0 else 0
+    st.write(f"**Cash Collection Ratio:** {cash_eff:.1f}%")
+    st.progress(cash_eff / 100)
     
-    if overall_eff > 100:
-        st.success(f"⭐ **Efficiency: {overall_eff:.1f}%** (Over Target)")
-    else:
-        st.info(f"💡 **Overall Efficiency: {overall_eff:.1f}%**")
+    st.write(f"**Direct Debit Ratio:** {dd_eff:.1f}%")
+    st.progress(dd_eff / 100)
+    
+    # Overall Efficiency
+    grand_total_coll = c_coll + d_coll
+    grand_total_potential = cash_total_potential + dd_total_potential
+    overall_eff = (grand_total_coll / grand_total_potential * 100) if grand_total_potential > 0 else 0
+    
+    st.info(f"💡 **Total Portfolio Collection: {overall_eff:.1f}%**")
 
-# --- 8. HISTORICAL ---
+# --- 8. TREND ---
 st.divider()
-st.subheader("Total Collection Trend")
-df['Total'] = df['Cash Collected'] + df['DD Collected']
-st.line_chart(df.set_index('Month')['Total'])
-
-with st.expander("Audit Raw Values"):
-    st.write(df[['Month', 'Cash Collected', 'Cash Due', 'DD Collected', 'DD Due']])
+df['Total Portfolio'] = (df['Cash Collected'] + df['Cash Due'] + df['DD Collected'] + df['DD Due'])
+st.subheader("Total Billing Volume Trend")
+st.line_chart(df.set_index('Month')['Total Portfolio'])
